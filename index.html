@@ -159,7 +159,7 @@ code { font-family: var(--f-mono); font-size: 12.5px; background: var(--line); p
   <section aria-labelledby="h-sem">
     <div class="sec-head"><span class="eyebrow">Comparado con un hogar de 2 personas</span><h2 id="h-sem">¿Cómo estás?</h2></div>
     <div class="legend">
-      <span class="pill pasa">Te pasás</span><span class="pill media">En la media</span><span class="pill mejor">Mejor que la media</span><span class="pill falta">Te falta algo</span>
+      <span class="pill pasa">Te pasás</span><span class="pill media">En la media</span><span class="pill mejor">Mejor que la media</span>
     </div>
     <div class="grid-status" id="status"></div>
   </section>
@@ -279,9 +279,9 @@ function render(d) {
   const m3 = sum(lect, "m3"), dias = sum(lect, "dias");
   const lpd = m3 / dias * 1000 / d.personas;
   const fijo = ult.luz_fijo_mes + ult.gas_fijo_mes;
-  const ultBono = [...F].reverse().find(f => f.bono_luz || f.bono_gas || f.bono_extra);
-  const bonosPrev = -(sum(P, "bono_luz") + sum(P, "bono_gas") + sum(P, "bono_extra"));
-  const bonosU = -(sum(U, "bono_luz") + sum(U, "bono_gas") + sum(U, "bono_extra"));
+
+
+
   const tariAnual = res.total;
 
   const items = [
@@ -295,8 +295,6 @@ function render(d) {
       extra: `La media nacional es para 3 personas y 100 m²; para 2 estás bien.` },
     { t: "Cuotas fijas de venta", v: `${eur(fijo, 2)}/mes`, ref: REF.cuota_fija_venta_mes.valor, x: fijo, u: "€", banda: 0.15,
       extra: `Luz ${eur(ult.luz_fijo_mes, 2)} + gas ${eur(ult.gas_fijo_mes, 2)} al mes. Hasta sep. 2025 pagabas ${eur(REF.cuota_fija_venta_mes.valor)} en total.`, refTxt: "antes" },
-    { t: "Bono social / descuentos", v: bonosU > 0 ? `${eur(bonosU)} en 12 meses` : "Sin descuentos", estado: bonosU < bonosPrev * 0.5 ? "falta" : "mejor",
-      extra: `Recibiste ${eur(bonosPrev)} el año anterior. El último bono social figura en la factura de ${ultBono ? mes(ultBono.desde) : "—"}.` },
   ];
   document.getElementById("status").innerHTML = items.map(it => {
     const st = it.estado || estado(it.x, it.ref, it.banda || banda);
@@ -315,9 +313,6 @@ function render(d) {
   const exceso = Math.max(0, kwh - REF.luz_kwh_anio.valor);
   const subidaFija = Math.max(0, fijo - REF.cuota_fija_venta_mes.valor) * 12 * 1.15;
   const tips = [
-    { h: "Renová la DSU/ISEE para recuperar el bono social",
-      p: `Las facturas de Hera aplicaron bono social de luz y gas hasta ${ultBono ? mes(ultBono.desde) : "—"} y después se cortó. Hera indica en cada factura que hay que presentar la DSU todos los años para seguir recibiéndolo. Si tu ISEE sigue dentro del umbral (9.796 € en 2026), al presentarla el descuento vuelve solo.`,
-      s: bonosPrev, sub: "lo que recibías por año" },
     { h: "Cambiá de oferta antes del 31/12/2026",
       p: `Con la misma oferta “P Netto Natura”, la cuota fija de venta pasó de 4 € a ${eur(ult.luz_fijo_mes, 2)} (luz) y de 4 € a ${eur(ult.gas_fijo_mes, 2)} (gas) por mes desde oct. 2025, y el precio neto de la luz subió a ${fmt(ult.luz_precio, 3)} €/kWh. Las condiciones vencen el 31/12/2026: compará en el Portale Offerte de ARERA (ilportaleofferte.it) con tus consumos reales: ${fmt(kwh)} kWh y ${fmt(smc)} Smc al año.`,
       s: subidaFija, sub: "solo en cuotas fijas, con IVA" },
