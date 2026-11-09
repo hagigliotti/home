@@ -27,5 +27,5 @@ Para probar en tu compu: `python3 scripts/extraer.py` (necesita `pdftotext`, paq
 
 ## Ver el sitio
 
-- **GitHub Pages:** Settings → Pages → Deploy from branch → `main` / `/ (root)`. Ojo: el sitio publicado es público aunque el repo sea privado.
+- **En línea:** https://hagigliotti.github.io/home/ (lo publica `.github/workflows/pages.yml`; los PDF no se publican). Ojo: la página es pública aunque el repo sea privado.
 - **En tu compu:** `python3 -m http.server` en la carpeta del repo y abrí `http://localhost:8000`.
