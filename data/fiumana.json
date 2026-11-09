@@ -1,6 +1,6 @@
 {
  "ubicacion": "Fiumana",
- "generado": "2026-11-09T21:22:40Z",
+ "generado": "2026-11-09T21:29:21Z",
  "personas": 2,
  "facturas_hera": [
   {
@@ -734,5 +734,6 @@
    "concepto": "AVVISO DI PAGAMENTO N. 20260911000341647 - SCADENZA 30/04/2026 - RATA UNICA",
    "vencimiento": "2026-04-30"
   }
- ]
+ ],
+ "kit_led_total": 99.03
 }

@@ -153,6 +153,12 @@ def procesar(ubic):
             continue
         pagos += [recibo(p, nombre) for p in sorted(glob.glob(os.path.join(carpeta, "*.pdf")))]
     pagos.sort(key=lambda r: r["fecha"] or "")
+    # factura del kit LED de Hera (se paga en cuotas dentro de la luz)
+    kit_led_total = None
+    for p in glob.glob(os.path.join(base, "Hera", "*.pdf")):
+        t = texto(p)
+        if "LED" in t and "LA FATTURA NON DEVE ESSERE PAGATA" in t:
+            kit_led_total = busca(r"Totale Fattura ([\d.,]+) €", t)
     out = {
         "ubicacion": ubic,
         "generado": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -161,6 +167,7 @@ def procesar(ubic):
         "agua_lecturas": sorted(lecturas.values(), key=lambda l: l["desde"]),
         "residuos": residuos,
         "pagos": pagos,
+        "kit_led_total": kit_led_total,
     }
     dest = os.path.join(ROOT, "data", slug(ubic) + ".json")
     with open(dest, "w", encoding="utf-8") as fh:

@@ -340,9 +340,15 @@ function render(d) {
     { h: "Pedí que ajusten el anticipo del agua",
       p: `Hera te factura 7 m³ por mes estimados, pero el medidor marca unos ${fmt(m3 / dias * 30, 1)} m³ por mes. Por eso cada 6 meses llega un ajuste grande (${eur(F.find(f => f.desde.startsWith("2025-09"))?.agua || 0)} en sep. 2025, ${eur(F.find(f => f.desde.startsWith("2026-03"))?.agua || 0)} en mar. 2026, ${eur(F.find(f => f.desde.startsWith("2026-09"))?.agua || 0)} en sep. 2026). No pagás más, pero con la autolectura en My Hera las facturas quedan parejas.`,
       s: 0, sub: "evita sorpresas" },
-    { h: "Revisá cuándo termina el kit LED",
-      p: `Pagás ${eur(ult.kit_led, 2)} por mes por el “Hera Led 1 Kit” desde nov. 2024; la factura de ${mes(ult.desde)} es la cuota ${ult.kit_led_cuota}. Confirmá con Hera cuántas cuotas quedan para no seguir pagándolo de más.`,
-      s: ult.kit_led * 12, sub: "por año cuando termine" },
+    (() => {
+      const cuotas = d.kit_led_total && ult.kit_led ? Math.round(d.kit_led_total / ult.kit_led) : null;
+      const faltan = cuotas && ult.kit_led_cuota ? cuotas - ult.kit_led_cuota : null;
+      return { h: faltan > 0 ? `El kit LED termina en ${faltan === 1 ? "la próxima factura" : faltan + " facturas"}` : faltan === 0 ? "El kit LED ya está pagado" : "Revisá cuándo termina el kit LED",
+        p: cuotas
+          ? `Las lámparas LED de Hera (factura de oct. 2024) costaron ${eur(d.kit_led_total, 2)} y se pagan en ${cuotas} cuotas de ${eur(ult.kit_led, 2)} dentro de la factura de luz. La de ${mes(ult.desde)} es la cuota ${ult.kit_led_cuota}. Si después de la cuota ${cuotas} sigue apareciendo, reclamalo a Hera.`
+          : `Pagás ${eur(ult.kit_led, 2)} por mes por el “Hera Led 1 Kit”; la factura de ${mes(ult.desde)} es la cuota ${ult.kit_led_cuota}. Confirmá con Hera cuántas cuotas quedan.`,
+        s: ult.kit_led * 12, sub: "por año menos, cuando termine" };
+    })(),
   ];
   document.getElementById("tips").innerHTML = tips.map(t => `<article class="tip"><span class="n"></span>
     <div class="body"><h3>${t.h}</h3><p class="muted">${t.p}</p></div>
