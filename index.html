@@ -12,7 +12,7 @@
 /* Layout: tablero de lectura de medidores. Resumen arriba, semáforo, luego detalle por servicio y recomendaciones. */
 :root {
   --bg: #f5f4f7; --surface: #ffffff; --ink: #1d1b22; --muted: #67636f; --line: #e2dfe7;
-  --luz: #d0592a; --gas: #7a4ab3; --agua: #128780; --res: #66792a; --extra: #9a95a3;
+  --luz: #d0592a; --gas: #7a4ab3; --agua: #128780; --res: #66792a; --imp: #9b4e5a; --extra: #9a95a3;
   --pasa: #b8322b; --pasa-bg: #fbe9e7; --media: #a8650c; --media-bg: #fbf0dd;
   --mejor: #23804a; --mejor-bg: #e3f3e8; --falta: #a52a68; --falta-bg: #f8e4ee;
   --f-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
@@ -22,12 +22,12 @@
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #16151a; --surface: #1f1e25; --ink: #ece9f1; --muted: #a29eab; --line: #322f3a;
-  --luz: #f07a48; --gas: #a77ee0; --agua: #33b5ac; --res: #9bb04d; --extra: #7d7887;
+  --luz: #f07a48; --gas: #a77ee0; --agua: #33b5ac; --res: #9bb04d; --imp: #d4808c; --extra: #7d7887;
   --pasa: #f0776e; --pasa-bg: #3a1f1e; --media: #e7a648; --media-bg: #382a14; --mejor: #5cc98a; --mejor-bg: #173024; --falta: #ec7fb5; --falta-bg: #3a1a2b;
   color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #16151a; --surface: #1f1e25; --ink: #ece9f1; --muted: #a29eab; --line: #322f3a;
-  --luz: #f07a48; --gas: #a77ee0; --agua: #33b5ac; --res: #9bb04d; --extra: #7d7887;
+  --luz: #f07a48; --gas: #a77ee0; --agua: #33b5ac; --res: #9bb04d; --imp: #d4808c; --extra: #7d7887;
   --pasa: #f0776e; --pasa-bg: #3a1f1e; --media: #e7a648; --media-bg: #382a14; --mejor: #5cc98a; --mejor-bg: #173024; --falta: #ec7fb5; --falta-bg: #3a1a2b;
   color-scheme: dark; }
 
@@ -48,6 +48,13 @@ a { color: inherit; text-underline-offset: 3px; }
 
 header { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; justify-content: space-between; }
 header .lede { display: grid; gap: 8px; max-width: 62ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: flex-end; }
+.refresh { display: inline-flex; align-items: center; gap: 6px; font: 600 14px var(--f-body); padding: 8px 14px; border-radius: 999px;
+  border: 1px solid var(--ink); background: var(--surface); color: var(--ink); cursor: pointer; }
+.refresh:hover { background: var(--ink); color: var(--bg); }
+.refresh[aria-busy="true"] svg { animation: girar 0.9s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+#estado-datos { flex-basis: 100%; text-align: right; }
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
 .tabs button { font: 500 14px var(--f-body); border: 1px solid var(--line); background: var(--surface); color: var(--ink);
   padding: 8px 14px; border-radius: 999px; cursor: pointer; }
@@ -62,9 +69,8 @@ section { display: grid; gap: 16px; }
 .big .amount { font: 600 clamp(34px, 6vw, 48px)/1 var(--f-mono); letter-spacing: -0.02em; }
 .delta { font: 600 13px var(--f-mono); }
 .delta.up { color: var(--pasa); } .delta.down { color: var(--mejor); }
-.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }
-.split > div { padding: 16px 18px; border-left: 1px solid var(--line); display: grid; gap: 6px; align-content: start; }
-.split > div:first-child { border-left: 0; }
+.split { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; border: 1px solid var(--line); border-radius: 14px; background: var(--line); overflow: hidden; }
+.split > div { padding: 16px 18px; background: var(--surface); display: grid; gap: 6px; align-content: start; }
 .split .k { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
 .dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
 .split .v { font: 600 22px/1 var(--f-mono); }
@@ -123,8 +129,7 @@ code { font-family: var(--f-mono); font-size: 12.5px; background: var(--line); p
 
 @media (max-width: 760px) {
   .hero, .charts { grid-template-columns: minmax(0, 1fr); }
-  .split > div { border-left: 0; border-top: 1px solid var(--line); }
-  .split > div:first-child { border-top: 0; }
+  .split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tip { grid-template-columns: auto minmax(0, 1fr); }
   .tip .save { grid-column: 2; text-align: left; }
 }
@@ -139,7 +144,14 @@ code { font-family: var(--f-mono); font-size: 12.5px; background: var(--line); p
       <h1>Gastos y consumos de casa</h1>
       <p class="muted" id="ubic-sub">Cargando facturas…</p>
     </div>
-    <nav class="tabs" id="tabs" role="tablist" aria-label="Ubicación"></nav>
+    <div class="controls">
+      <nav class="tabs" id="tabs" role="tablist" aria-label="Ubicación"></nav>
+      <button type="button" class="refresh" id="btn-actualizar" aria-describedby="estado-datos">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>
+        <span>Actualizar</span>
+      </button>
+      <span class="note" id="estado-datos" role="status"></span>
+    </div>
   </header>
 
   <section id="resumen" aria-labelledby="h-resumen">
@@ -204,12 +216,13 @@ code { font-family: var(--f-mono); font-size: 12.5px; background: var(--line); p
     <div class="sec-head"><span class="eyebrow">Todo pagado</span><h2 id="h-tabla">Detalle de facturas</h2></div>
     <div class="table-wrap"><table id="tabla"></table></div>
     <div class="table-wrap"><table id="tabla-res"></table></div>
+    <div class="table-wrap" id="wrap-pagos"><table id="tabla-pagos"></table></div>
   </section>
 
   <footer>
     <p><b>De dónde salen los números.</b> Leídos automáticamente de los PDF en <code>Fiumana/Servizi</code>. Las referencias están en <code>data/referencias.json</code>:</p>
     <ul id="fuentes"></ul>
-    <p><b>Para sumar facturas:</b> subí el PDF a la carpeta del servicio y ejecutá <code>python3 scripts/extraer.py Fiumana</code>. Para otra casa, creá la carpeta (p. ej. <code>Forli/Servizi/Hera</code>), corré el script con ese nombre y agregala en <code>data/ubicaciones.json</code>.</p>
+    <p><b>Para sumar facturas:</b> subí el PDF en GitHub a la carpeta del servicio (<code>Hera</code>, <code>Alea</code>, o una carpeta nueva para cada impuesto, como <code>Sorit</code>). GitHub lee los PDF y regenera los datos solo en un minuto aproximadamente; después tocá <b>Actualizar</b>. Para otra casa, creá su carpeta con <code>Servizi</code> adentro (p. ej. <code>Forli/Servizi/Hera</code>) y aparece sola como nueva pestaña.</p>
   </footer>
 </div>
 
@@ -245,14 +258,18 @@ function render(d) {
   const U = F.filter(f => f.desde.slice(0, 7) >= ini);
   const P = F.filter(f => f.desde.slice(0, 7) >= iniPrev && f.desde.slice(0, 7) < ini);
   const res = d.residuos[d.residuos.length - 1];
+  const finDia = fin + "-31";
+  const pagos = d.pagos || [];
+  const PU = pagos.filter(p => p.fecha && p.fecha >= ini + "-01" && p.fecha <= finDia);
+  const nombresPagos = [...new Set(pagos.map(p => p.servicio))];
 
   document.getElementById("ubic-sub").textContent =
-    `${d.personas} personas · ${F.length} facturas Hera desde ${mes(F[0].desde)} hasta ${mes(ult.desde)} · residuos Alea ${d.residuos.map(r => r.anio).join(" y ")}`;
-  document.getElementById("periodo-txt").textContent = `${mes(U[0].desde)} – ${mes(ult.desde)} · Hera + residuos`;
+    `${d.personas} personas · ${F.length} facturas Hera desde ${mes(F[0].desde)} hasta ${mes(ult.desde)} · residuos Alea ${d.residuos.map(r => r.anio).join(" y ")}${pagos.length ? ` · ${pagos.length} recibos de ${nombresPagos.join(", ")}` : ""}`;
+  document.getElementById("periodo-txt").textContent = `${mes(U[0].desde)} – ${mes(ult.desde)} · Hera, residuos${nombresPagos.length ? " e impuestos" : ""}`;
 
-  const tot = { agua: sum(U, "agua"), gas: sum(U, "gas"), luz: sum(U, "luz_energia"), extras: sum(U, "extras"), res: res.total };
+  const tot = { agua: sum(U, "agua"), gas: sum(U, "gas"), luz: sum(U, "luz_energia"), extras: sum(U, "extras"), res: res.total, imp: sum(PU, "importe") };
   const totPrev = sum(P, "total");
-  const total12 = tot.agua + tot.gas + tot.luz + tot.extras + tot.res;
+  const total12 = tot.agua + tot.gas + tot.luz + tot.extras + tot.res + tot.imp;
   const hera12 = sum(U, "total");
   document.getElementById("total-12").textContent = eur(total12);
   const dlt = hera12 - totPrev;
@@ -268,6 +285,7 @@ function render(d) {
     ["Residuos", "res", tot.res, `TARI ${res.anio}, Alea`],
     ["Otros cargos", "extra", tot.extras, `canon TV y kit LED`],
   ];
+  if (pagos.length) parts.splice(4, 0, ["Impuestos", "imp", tot.imp, nombresPagos.join(", ")]);
   document.getElementById("split").innerHTML = parts.map(([n, c, v, s]) =>
     `<div><span class="k"><span class="dot" style="background:var(--${c})"></span>${n}</span><span class="v">${eur(v)}</span><span class="s">${s} · ${fmt(v / total12 * 100)}%</span></div>`).join("");
   document.getElementById("mix-bar").innerHTML = parts.map(([, c, v]) => `<span style="width:${v / total12 * 100}%;background:var(--${c})"></span>`).join("");
@@ -342,6 +360,13 @@ function render(d) {
     `<thead><tr><th scope="col">Residuos · Alea Ambiente</th><th>Año</th><th>Personas</th><th>Cuota del año €</th><th>Ajuste año anterior €</th><th>Total factura €</th></tr></thead>
      <tbody>${d.residuos.map(r => `<tr><td>${r.archivo}</td><td>${r.anio}</td><td>${r.componentes}</td><td>${fmt(r.imponible_anio, 2)}</td><td>${r.imponible_ajuste_anterior ? fmt(r.imponible_ajuste_anterior, 2) : "—"}</td><td>${fmt(r.total, 2)}</td></tr>`).join("")}</tbody>`;
 
+  const fecha = iso => iso ? iso.split("-").reverse().join("/") : "—";
+  document.getElementById("wrap-pagos").hidden = !pagos.length;
+  document.getElementById("tabla-pagos").innerHTML = !pagos.length ? "" :
+    `<thead><tr><th scope="col">Impuestos y otros pagos</th><th>Pagado</th><th>Vencimiento</th><th>Importe €</th><th>Comisión €</th><th>Archivo</th></tr></thead>
+     <tbody>${[...pagos].reverse().map(p => `<tr><td>${p.servicio}</td><td>${fecha(p.fecha)}</td><td>${fecha(p.vencimiento)}</td><td>${p.importe != null ? fmt(p.importe, 2) : "—"}</td><td>${p.comision ? fmt(p.comision, 2) : "—"}</td><td>${p.archivo.length > 34 ? p.archivo.slice(0, 31) + "…" : p.archivo}</td></tr>`).join("")}</tbody>
+     <tfoot><tr><td>Total ${pagos.length} pagos</td><td></td><td></td><td>${fmt(sum(pagos, "importe"), 2)}</td><td>${fmt(sum(pagos, "comision"), 2)}</td><td></td></tr></tfoot>`;
+
   document.getElementById("fuentes").innerHTML = Object.entries(REF).filter(([k, v]) => v && v.texto).map(([k, v]) =>
     `<li>${v.url ? `<a href="${v.url}" target="_blank" rel="noopener">${v.texto}</a>` : v.texto}: <span class="num">${fmt(v.valor)}</span></li>`).join("");
 
@@ -403,21 +428,53 @@ function dibujar() {
       y1: { position: "right", grid: { display: false }, border: { display: false }, ticks: { callback: v => fmt(v, 2) }, title: { display: true, text: "€/Smc" } } } } }));
 }
 
+// siempre pide la última versión de los datos (sin caché del navegador)
+const traer = url => fetch(url + (url.includes("?") ? "&" : "?") + "v=" + Date.now(), { cache: "no-store" }).then(r => {
+  if (!r.ok) throw new Error(url + " respondió " + r.status);
+  return r.json();
+});
+let UBIC = [], actual = null;
+
 async function cargar(u) {
+  actual = u.id;
   document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.id === u.id));
   document.getElementById("ubic-detalle").textContent = u.detalle;
-  const d = await (await fetch(u.archivo)).json();
+  const d = await traer(u.archivo);
   render(d);
+  const g = d.generado ? new Date(d.generado) : null;
+  document.getElementById("estado-datos").textContent = g
+    ? "Datos leídos de los PDF el " + g.toLocaleDateString("es-ES", { day: "numeric", month: "short" }) + " a las " + g.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })
+    : "";
+  return d;
 }
+
+async function iniciar() {
+  const [ubic, ref] = await Promise.all([traer("data/ubicaciones.json"), traer("data/referencias.json")]);
+  REF = ref; UBIC = ubic;
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = ubic.map(u => `<button role="tab" data-id="${u.id}">${u.nombre}</button>`).join("");
+  tabs.querySelectorAll("button").forEach((b, i) => b.addEventListener("click", () => cargar(ubic[i])));
+  return cargar(ubic.find(u => u.id === actual) || ubic[0]);
+}
+
+document.getElementById("btn-actualizar").addEventListener("click", async e => {
+  const btn = e.currentTarget, estado = document.getElementById("estado-datos");
+  const antes = DATA ? DATA.generado : null;
+  btn.setAttribute("aria-busy", "true"); btn.disabled = true;
+  try {
+    const d = await iniciar();
+    estado.textContent = (d.generado && d.generado !== antes ? "Actualizado. " : "Ya tenés lo último. ") + estado.textContent +
+      (d.generado === antes ? ". Si recién subiste un PDF, esperá un minuto a que GitHub lo procese y volvé a tocar Actualizar." : "");
+  } catch (err) {
+    estado.textContent = "No se pudo actualizar: " + err.message;
+  } finally {
+    btn.removeAttribute("aria-busy"); btn.disabled = false;
+  }
+});
 
 (async function () {
   try {
-    const [ubic, ref] = await Promise.all([fetch("data/ubicaciones.json").then(r => r.json()), fetch("data/referencias.json").then(r => r.json())]);
-    REF = ref;
-    const tabs = document.getElementById("tabs");
-    tabs.innerHTML = ubic.map(u => `<button role="tab" data-id="${u.id}">${u.nombre}</button>`).join("");
-    tabs.querySelectorAll("button").forEach((b, i) => b.addEventListener("click", () => cargar(ubic[i])));
-    await cargar(ubic[0]);
+    await iniciar();
   } catch (e) {
     document.getElementById("ubic-sub").textContent = "No se pudieron cargar los datos (" + e.message + "). Abrí la página desde GitHub Pages o un servidor local.";
   }

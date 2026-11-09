@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """Lee las facturas en PDF de una ubicación y genera data/<ubicacion>.json.
 
-Uso:  python3 scripts/extraer.py Fiumana
+Uso:  python3 scripts/extraer.py            (todas las ubicaciones)
+      python3 scripts/extraer.py Fiumana    (solo una)
 Requiere pdftotext (paquete poppler-utils).
 
 Estructura esperada:
   <Ubicacion>/Servizi/Hera/*.pdf   facturas mensuales Hera (agua, gas, luz)
   <Ubicacion>/Servizi/Alea/*.pdf   facturas anuales Alea Ambiente (residuos / TARI)
+  <Ubicacion>/Servizi/<Otro>/*.pdf recibos de impuestos u otros pagos (p. ej. Sorit);
+                                   el nombre de la carpeta es el nombre del pago
 """
-import glob, json, os, re, subprocess, sys
+import datetime, glob, json, os, re, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -103,7 +106,37 @@ def alea(pdf):
     }
 
 
-def main(ubic):
+MESES_IT = {m: i + 1 for i, m in enumerate(
+    "gennaio febbraio marzo aprile maggio giugno luglio agosto settembre ottobre novembre dicembre".split())}
+ESPECIALES = {"hera", "alea"}
+
+
+def recibo(pdf, servicio):
+    """Recibo de pago genérico (pagoPA u otro): fecha, importe, comisión y concepto."""
+    t = texto(pdf)
+    r = {"servicio": servicio, "archivo": os.path.basename(pdf), "fecha": None,
+         "importe": None, "comision": 0.0, "concepto": None, "vencimiento": None}
+    m = re.search(r"(\d{1,2}) (" + "|".join(MESES_IT) + r") (\d{4})", t)
+    if m:
+        r["fecha"] = f"{m.group(3)}-{MESES_IT[m.group(2)]:02d}-{int(m.group(1)):02d}"
+    r["importe"] = busca(r"Importo\n+ ?([\d.,]+) €", t) or busca(r"Importo[^\n]*?([\d.,]+) €", t)
+    r["comision"] = busca(r"Commissione[^\n]*?([\d.,]+) €", t, default=0.0)
+    m = re.search(r"\n ?((?:AVVISO|POSIZIONE|PAGAMENTO|TRIBUTO|IMU|TARI)[^\n]{5,120})", t)
+    if m:
+        r["concepto"] = m.group(1).strip()
+    r["vencimiento"] = busca(r"SCADENZA (\d\d/\d\d/\d{4})", t, lambda x: "-".join(reversed(x.split("/"))))
+    if not r["fecha"] and r["vencimiento"]:
+        r["fecha"] = r["vencimiento"]
+    return r
+
+
+def slug(nombre):
+    import unicodedata
+    s = unicodedata.normalize("NFKD", nombre).encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+
+
+def procesar(ubic):
     base = os.path.join(ROOT, ubic, "Servizi")
     facturas = [f for f in (hera(p) for p in sorted(glob.glob(os.path.join(base, "Hera", "*.pdf")))) if f]
     facturas.sort(key=lambda f: f["desde"] or "")
@@ -112,18 +145,50 @@ def main(ubic):
         for l in f.pop("agua_lecturas"):
             lecturas[l["desde"]] = l
     residuos = sorted((alea(p) for p in glob.glob(os.path.join(base, "Alea", "*.pdf"))), key=lambda a: a["anio"] or 0)
+    # cualquier otra carpeta dentro de Servizi = impuestos u otros pagos (recibos)
+    pagos = []
+    for carpeta in sorted(glob.glob(os.path.join(base, "*"))):
+        nombre = os.path.basename(carpeta)
+        if not os.path.isdir(carpeta) or nombre.lower() in ESPECIALES:
+            continue
+        pagos += [recibo(p, nombre) for p in sorted(glob.glob(os.path.join(carpeta, "*.pdf")))]
+    pagos.sort(key=lambda r: r["fecha"] or "")
     out = {
         "ubicacion": ubic,
+        "generado": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "personas": next((r["componentes"] for r in residuos if r.get("componentes")), 2),
         "facturas_hera": facturas,
         "agua_lecturas": sorted(lecturas.values(), key=lambda l: l["desde"]),
         "residuos": residuos,
+        "pagos": pagos,
     }
-    dest = os.path.join(ROOT, "data", ubic.lower() + ".json")
+    dest = os.path.join(ROOT, "data", slug(ubic) + ".json")
     with open(dest, "w", encoding="utf-8") as fh:
         json.dump(out, fh, ensure_ascii=False, indent=1)
-    print(f"{dest}: {len(facturas)} facturas Hera, {len(residuos)} Alea, {len(lecturas)} lecturas de agua")
+    print(f"{dest}: {len(facturas)} facturas Hera, {len(residuos)} Alea, {len(pagos)} otros pagos, {len(lecturas)} lecturas de agua")
+    return slug(ubic)
+
+
+def main(nombres):
+    """Sin argumentos procesa todas las carpetas del repo que tengan Servizi/ y actualiza data/ubicaciones.json."""
+    todas = sorted(d for d in os.listdir(ROOT) if os.path.isdir(os.path.join(ROOT, d, "Servizi")))
+    nombres = nombres or todas
+    for n in nombres:
+        procesar(n)
+    # ubicaciones: conserva lo escrito a mano (detalle) y agrega las carpetas nuevas
+    ruta = os.path.join(ROOT, "data", "ubicaciones.json")
+    try:
+        actuales = json.load(open(ruta, encoding="utf-8"))
+    except FileNotFoundError:
+        actuales = []
+    ids = {u["id"] for u in actuales}
+    for n in todas:
+        if slug(n) not in ids:
+            actuales.append({"id": slug(n), "nombre": n, "detalle": n, "archivo": f"data/{slug(n)}.json"})
+    actuales = [u for u in actuales if os.path.exists(os.path.join(ROOT, u["archivo"]))]
+    with open(ruta, "w", encoding="utf-8") as fh:
+        json.dump(actuales, fh, ensure_ascii=False, indent=1)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "Fiumana")
+    main(sys.argv[1:])

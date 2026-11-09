@@ -22,6 +22,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Leer los PDF y regenerar los datos
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+          python3 scripts/extraer.py
       - name: Armar el sitio (solo la página y los datos, sin los PDF)
         run: |
           mkdir _site

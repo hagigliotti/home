@@ -1,3 +1,8 @@
 [
- {"id": "fiumana", "nombre": "Fiumana", "detalle": "Viale Garibaldi 17, Fiumana (Predappio, FC)", "archivo": "data/fiumana.json"}
+ {
+  "id": "fiumana",
+  "nombre": "Fiumana",
+  "detalle": "Viale Garibaldi 17, Fiumana (Predappio, FC)",
+  "archivo": "data/fiumana.json"
+ }
 ]
