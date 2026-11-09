@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gastos de Casa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: tablero de lectura de medidores. Resumen arriba, semáforo, luego detalle por servicio y recomendaciones. */
+:root {
+  --bg: #f5f4f7; --surface: #ffffff; --ink: #1d1b22; --muted: #67636f; --line: #e2dfe7;
+  --luz: #d0592a; --gas: #7a4ab3; --agua: #128780; --res: #66792a; --extra: #9a95a3;
+  --pasa: #b8322b; --pasa-bg: #fbe9e7; --media: #a8650c; --media-bg: #fbf0dd;
+  --mejor: #23804a; --mejor-bg: #e3f3e8; --falta: #a52a68; --falta-bg: #f8e4ee;
+  --f-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #16151a; --surface: #1f1e25; --ink: #ece9f1; --muted: #a29eab; --line: #322f3a;
+  --luz: #f07a48; --gas: #a77ee0; --agua: #33b5ac; --res: #9bb04d; --extra: #7d7887;
+  --pasa: #f0776e; --pasa-bg: #3a1f1e; --media: #e7a648; --media-bg: #382a14; --mejor: #5cc98a; --mejor-bg: #173024; --falta: #ec7fb5; --falta-bg: #3a1a2b;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #16151a; --surface: #1f1e25; --ink: #ece9f1; --muted: #a29eab; --line: #322f3a;
+  --luz: #f07a48; --gas: #a77ee0; --agua: #33b5ac; --res: #9bb04d; --extra: #7d7887;
+  --pasa: #f0776e; --pasa-bg: #3a1f1e; --media: #e7a648; --media-bg: #382a14; --mejor: #5cc98a; --mejor-bg: #173024; --falta: #ec7fb5; --falta-bg: #3a1a2b;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 28px 64px; display: grid; gap: 40px; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.1; }
+h2 { font-size: 22px; }
+h3 { font-size: 16px; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.eyebrow { font: 600 12px/1 var(--f-body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+a { color: inherit; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--gas); outline-offset: 2px; }
+
+header { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; justify-content: space-between; }
+header .lede { display: grid; gap: 8px; max-width: 62ch; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tabs button { font: 500 14px var(--f-body); border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+section { display: grid; gap: 16px; }
+.sec-head { display: grid; gap: 4px; }
+
+/* resumen */
+.hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 2fr); gap: 24px; align-items: stretch; }
+.big { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; display: grid; gap: 10px; align-content: start; }
+.big .amount { font: 600 clamp(34px, 6vw, 48px)/1 var(--f-mono); letter-spacing: -0.02em; }
+.delta { font: 600 13px var(--f-mono); }
+.delta.up { color: var(--pasa); } .delta.down { color: var(--mejor); }
+.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }
+.split > div { padding: 16px 18px; border-left: 1px solid var(--line); display: grid; gap: 6px; align-content: start; }
+.split > div:first-child { border-left: 0; }
+.split .k { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+.dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.split .v { font: 600 22px/1 var(--f-mono); }
+.split .s { font-size: 12.5px; color: var(--muted); }
+.bar { height: 8px; border-radius: 99px; display: flex; overflow: hidden; background: var(--line); }
+
+/* semáforo */
+.legend { display: flex; flex-wrap: wrap; gap: 8px; }
+.grid-status { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.status { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 10px; grid-template-rows: auto auto 1fr auto; }
+.status .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.status .val { font: 600 20px/1.2 var(--f-mono); }
+.status .ref { font-size: 13px; color: var(--muted); }
+.meter { position: relative; height: 6px; background: var(--line); border-radius: 99px; }
+.meter i { position: absolute; top: -3px; width: 2px; height: 12px; background: var(--ink); }
+.meter b { position: absolute; inset: 0 auto 0 0; border-radius: 99px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font: 600 12px/1 var(--f-body); padding: 6px 10px; border-radius: 999px; white-space: nowrap; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.pasa { color: var(--pasa); background: var(--pasa-bg); }
+.pill.media { color: var(--media); background: var(--media-bg); }
+.pill.mejor { color: var(--mejor); background: var(--mejor-bg); }
+.pill.falta { color: var(--falta); background: var(--falta-bg); }
+
+/* gráficos */
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 12px; min-width: 0; }
+.card.wide { grid-column: 1 / -1; }
+.chart-box { position: relative; height: 260px; }
+.card.wide .chart-box { height: 300px; }
+.note { font-size: 13px; color: var(--muted); }
+
+/* recomendaciones */
+.tips { display: grid; gap: 10px; counter-reset: tip; }
+.tip { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 16px; align-items: start; padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.tip .n { counter-increment: tip; font: 700 15px/1.4 var(--f-display); color: var(--muted); }
+.tip .n::before { content: counter(tip); }
+.tip .body { display: grid; gap: 4px; }
+.tip .save { text-align: right; display: grid; gap: 2px; }
+.tip .save b { font: 600 18px var(--f-mono); color: var(--mejor); white-space: nowrap; }
+.tip .save span { font-size: 12px; color: var(--muted); }
+
+/* tabla */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 780px; }
+th, td { padding: 9px 12px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th { font: 600 12px var(--f-body); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); position: sticky; top: 0; background: var(--surface); }
+td { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+td.neg { color: var(--mejor); }
+tbody tr:last-child td { border-bottom: 0; }
+tfoot td { font-weight: 600; border-top: 2px solid var(--line); border-bottom: 0; }
+
+footer { display: grid; gap: 12px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 20px; }
+footer ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+code { font-family: var(--f-mono); font-size: 12.5px; background: var(--line); padding: 1px 5px; border-radius: 4px; }
+
+@media (max-width: 760px) {
+  .hero, .charts { grid-template-columns: minmax(0, 1fr); }
+  .split > div { border-left: 0; border-top: 1px solid var(--line); }
+  .split > div:first-child { border-top: 0; }
+  .tip { grid-template-columns: auto minmax(0, 1fr); }
+  .tip .save { grid-column: 2; text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="lede">
+      <span class="eyebrow" id="ubic-detalle">Casa</span>
+      <h1>Gastos y consumos de casa</h1>
+      <p class="muted" id="ubic-sub">Cargando facturas…</p>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Ubicación"></nav>
+  </header>
+
+  <section id="resumen" aria-labelledby="h-resumen">
+    <div class="sec-head"><span class="eyebrow">Últimos 12 meses</span><h2 id="h-resumen">Cuánto pagás</h2></div>
+    <div class="hero">
+      <div class="big">
+        <span class="muted" id="periodo-txt"></span>
+        <span class="amount" id="total-12"></span>
+        <span class="delta" id="delta-12"></span>
+        <div class="bar" id="mix-bar" aria-hidden="true"></div>
+        <span class="note" id="mes-prom"></span>
+      </div>
+      <div class="split" id="split"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-sem">
+    <div class="sec-head"><span class="eyebrow">Comparado con un hogar de 2 personas</span><h2 id="h-sem">¿Cómo estás?</h2></div>
+    <div class="legend">
+      <span class="pill pasa">Te pasás</span><span class="pill media">En la media</span><span class="pill mejor">Mejor que la media</span><span class="pill falta">Te falta algo</span>
+    </div>
+    <div class="grid-status" id="status"></div>
+  </section>
+
+  <section aria-labelledby="h-ahorro">
+    <div class="sec-head"><span class="eyebrow">Ordenado por impacto</span><h2 id="h-ahorro">Cómo gastar menos</h2></div>
+    <div class="tips" id="tips"></div>
+  </section>
+
+  <section aria-labelledby="h-graf">
+    <div class="sec-head"><span class="eyebrow">Mes a mes</span><h2 id="h-graf">Gastos y consumos</h2></div>
+    <div class="charts">
+      <div class="card wide">
+        <h3>Importe de cada factura</h3>
+        <div class="chart-box"><canvas id="c-gasto" aria-label="Gasto mensual por servicio"></canvas></div>
+        <p class="note">Barras = lo que pagaste por servicio. La línea marca los descuentos (bono social y contribución extraordinaria) que bajaban la factura.</p>
+      </div>
+      <div class="card">
+        <h3>Luz · kWh por mes</h3>
+        <div class="chart-box"><canvas id="c-kwh"></canvas></div>
+        <p class="note">Mismo mes, año contra año.</p>
+      </div>
+      <div class="card">
+        <h3>Gas · Smc por mes</h3>
+        <div class="chart-box"><canvas id="c-smc"></canvas></div>
+        <p class="note">El gas es calefacción: casi todo se consume de noviembre a marzo.</p>
+      </div>
+      <div class="card">
+        <h3>Agua · litros por persona y día</h3>
+        <div class="chart-box"><canvas id="c-agua"></canvas></div>
+        <p class="note">Calculado con las lecturas reales del medidor (no con las estimaciones mensuales).</p>
+      </div>
+      <div class="card">
+        <h3>Precio de la energía en tu oferta</h3>
+        <div class="chart-box"><canvas id="c-precio"></canvas></div>
+        <p class="note">Precio neto de venta Hera, sin red, impuestos ni cuota fija.</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-tabla">
+    <div class="sec-head"><span class="eyebrow">Todo pagado</span><h2 id="h-tabla">Detalle de facturas</h2></div>
+    <div class="table-wrap"><table id="tabla"></table></div>
+    <div class="table-wrap"><table id="tabla-res"></table></div>
+  </section>
+
+  <footer>
+    <p><b>De dónde salen los números.</b> Leídos automáticamente de los PDF en <code>Fiumana/Servizi</code>. Las referencias están en <code>data/referencias.json</code>:</p>
+    <ul id="fuentes"></ul>
+    <p><b>Para sumar facturas:</b> subí el PDF a la carpeta del servicio y ejecutá <code>python3 scripts/extraer.py Fiumana</code>. Para otra casa, creá la carpeta (p. ej. <code>Forli/Servizi/Hera</code>), corré el script con ese nombre y agregala en <code>data/ubicaciones.json</code>.</p>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const MESES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const eur = (v, d = 0) => (v < 0 ? "−" : "") + "€ " + Math.abs(v).toLocaleString("es-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmt = (v, d = 0) => v.toLocaleString("es-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const sum = (a, k) => a.reduce((s, x) => s + (x[k] || 0), 0);
+const mes = iso => { const [y, m] = iso.split("-"); return MESES[+m - 1] + " " + y.slice(2); };
+const etiqueta = f => {
+  const a = f.desde.slice(0, 7), b = f.hasta.slice(0, 7);
+  return a === b ? mes(f.desde) : MESES[+a.slice(5) - 1] + "–" + mes(f.hasta);
+};
+let charts = [], DATA, REF;
+
+function estado(valor, ref, banda, menorEsMejor = true) {
+  const r = valor / ref;
+  if (r > 1 + banda) return menorEsMejor ? "pasa" : "mejor";
+  if (r < 1 - banda) return menorEsMejor ? "mejor" : "pasa";
+  return "media";
+}
+const ESTADO_TXT = { pasa: "Te pasás", media: "En la media", mejor: "Mejor que la media", falta: "Te falta algo" };
+
+function render(d) {
+  DATA = d;
+  const F = d.facturas_hera, banda = REF.banda;
+  const ult = F[F.length - 1];
+  const fin = ult.desde.slice(0, 7);
+  const ini = (() => { const [y, m] = fin.split("-").map(Number); const t = new Date(y, m - 12, 1); return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0"); })();
+  const iniPrev = (() => { const [y, m] = ini.split("-").map(Number); const t = new Date(y, m - 13, 1); return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0"); })();
+  const U = F.filter(f => f.desde.slice(0, 7) >= ini);
+  const P = F.filter(f => f.desde.slice(0, 7) >= iniPrev && f.desde.slice(0, 7) < ini);
+  const res = d.residuos[d.residuos.length - 1];
+
+  document.getElementById("ubic-sub").textContent =
+    `${d.personas} personas · ${F.length} facturas Hera desde ${mes(F[0].desde)} hasta ${mes(ult.desde)} · residuos Alea ${d.residuos.map(r => r.anio).join(" y ")}`;
+  document.getElementById("periodo-txt").textContent = `${mes(U[0].desde)} – ${mes(ult.desde)} · Hera + residuos`;
+
+  const tot = { agua: sum(U, "agua"), gas: sum(U, "gas"), luz: sum(U, "luz_energia"), extras: sum(U, "extras"), res: res.total };
+  const totPrev = sum(P, "total");
+  const total12 = tot.agua + tot.gas + tot.luz + tot.extras + tot.res;
+  const hera12 = sum(U, "total");
+  document.getElementById("total-12").textContent = eur(total12);
+  const dlt = hera12 - totPrev;
+  const de = document.getElementById("delta-12");
+  de.className = "delta " + (dlt > 0 ? "up" : "down");
+  de.textContent = `${dlt > 0 ? "+" : "−"}${eur(Math.abs(dlt)).replace("€ ", "€")} en Hera vs. los 12 meses anteriores (${dlt > 0 ? "+" : ""}${fmt(dlt / totPrev * 100)}%)`;
+  document.getElementById("mes-prom").textContent = `Promedio: ${eur(total12 / 12)} por mes, todo incluido.`;
+
+  const parts = [
+    ["Luz", "luz", tot.luz, `${fmt(sum(U, "kwh"))} kWh`],
+    ["Gas", "gas", tot.gas, `${fmt(sum(U, "smc"))} Smc`],
+    ["Agua", "agua", tot.agua, `facturado por Hera`],
+    ["Residuos", "res", tot.res, `TARI ${res.anio}, Alea`],
+    ["Otros cargos", "extra", tot.extras, `canon TV y kit LED`],
+  ];
+  document.getElementById("split").innerHTML = parts.map(([n, c, v, s]) =>
+    `<div><span class="k"><span class="dot" style="background:var(--${c})"></span>${n}</span><span class="v">${eur(v)}</span><span class="s">${s} · ${fmt(v / total12 * 100)}%</span></div>`).join("");
+  document.getElementById("mix-bar").innerHTML = parts.map(([, c, v]) => `<span style="width:${v / total12 * 100}%;background:var(--${c})"></span>`).join("");
+
+  // ---- semáforo
+  const kwh = sum(U, "kwh"), smc = sum(U, "smc");
+  const kwhPrev = sum(P, "kwh");
+  const lect = d.agua_lecturas.filter(l => l.hasta >= ini + "-01");
+  const m3 = sum(lect, "m3"), dias = sum(lect, "dias");
+  const lpd = m3 / dias * 1000 / d.personas;
+  const fijo = ult.luz_fijo_mes + ult.gas_fijo_mes;
+  const ultBono = [...F].reverse().find(f => f.bono_luz || f.bono_gas || f.bono_extra);
+  const bonosPrev = -(sum(P, "bono_luz") + sum(P, "bono_gas") + sum(P, "bono_extra"));
+  const bonosU = -(sum(U, "bono_luz") + sum(U, "bono_gas") + sum(U, "bono_extra"));
+  const tariAnual = res.total;
+
+  const items = [
+    { t: "Consumo de luz", v: `${fmt(kwh)} kWh/año`, ref: REF.luz_kwh_anio.valor, x: kwh, u: "kWh",
+      extra: `Subió ${fmt((kwh / kwhPrev - 1) * 100)}% respecto al año anterior (${fmt(kwhPrev)} kWh).` },
+    { t: "Consumo de gas", v: `${fmt(smc)} Smc/año`, ref: REF.gas_smc_anio.valor, x: smc, u: "Smc",
+      extra: `Bajó frente al año anterior (${fmt(sum(P, "smc"))} Smc). Buen manejo de la calefacción.` },
+    { t: "Consumo de agua", v: `${fmt(lpd)} L/persona/día`, ref: REF.agua_litros_persona_dia.valor, x: lpd, u: "L",
+      extra: `${fmt(m3)} m³ medidos en ${dias} días (≈ ${fmt(m3 / dias * 365)} m³/año).` },
+    { t: "Residuos (TARI)", v: `${eur(tariAnual, 2)} en ${res.anio}`, ref: REF.tari_anio.valor, x: tariAnual, u: "€",
+      extra: `La media nacional es para 3 personas y 100 m²; para 2 estás bien.` },
+    { t: "Cuotas fijas de venta", v: `${eur(fijo, 2)}/mes`, ref: REF.cuota_fija_venta_mes.valor, x: fijo, u: "€", banda: 0.15,
+      extra: `Luz ${eur(ult.luz_fijo_mes, 2)} + gas ${eur(ult.gas_fijo_mes, 2)} al mes. Hasta sep. 2025 pagabas ${eur(REF.cuota_fija_venta_mes.valor)} en total.`, refTxt: "antes" },
+    { t: "Bono social / descuentos", v: bonosU > 0 ? `${eur(bonosU)} en 12 meses` : "Sin descuentos", estado: bonosU < bonosPrev * 0.5 ? "falta" : "mejor",
+      extra: `Recibiste ${eur(bonosPrev)} el año anterior. El último bono social figura en la factura de ${ultBono ? mes(ultBono.desde) : "—"}.` },
+  ];
+  document.getElementById("status").innerHTML = items.map(it => {
+    const st = it.estado || estado(it.x, it.ref, it.banda || banda);
+    let meter = "";
+    if (it.ref) {
+      const max = Math.max(it.x, it.ref) * 1.3;
+      meter = `<div class="meter" role="img" aria-label="Tu valor frente a la referencia"><b style="width:${it.x / max * 100}%;background:var(--${st})"></b><i style="left:${it.ref / max * 100}%"></i></div>
+        <span class="ref">Referencia ${it.refTxt || "media"}: <span class="num">${it.u === "€" ? eur(it.ref) : fmt(it.ref) + " " + it.u}</span> · tu valor ${it.x > it.ref ? "+" : "−"}${fmt(Math.abs(it.x / it.ref - 1) * 100)}%</span>`;
+    }
+    return `<article class="status"><div class="row"><h3>${it.t}</h3><span class="pill ${st}">${ESTADO_TXT[st]}</span></div>
+      <span class="val">${it.v}</span><span class="note">${it.extra}</span>${meter}</article>`;
+  }).join("");
+
+  // ---- recomendaciones
+  const precioLuz = ult.luz_energia / ult.kwh; // € por kWh todo incluido del último mes
+  const exceso = Math.max(0, kwh - REF.luz_kwh_anio.valor);
+  const subidaFija = Math.max(0, fijo - REF.cuota_fija_venta_mes.valor) * 12 * 1.15;
+  const tips = [
+    { h: "Renová la DSU/ISEE para recuperar el bono social",
+      p: `Las facturas de Hera aplicaron bono social de luz y gas hasta ${ultBono ? mes(ultBono.desde) : "—"} y después se cortó. Hera indica en cada factura que hay que presentar la DSU todos los años para seguir recibiéndolo. Si tu ISEE sigue dentro del umbral (9.796 € en 2026), al presentarla el descuento vuelve solo.`,
+      s: bonosPrev, sub: "lo que recibías por año" },
+    { h: "Cambiá de oferta antes del 31/12/2026",
+      p: `Con la misma oferta “P Netto Natura”, la cuota fija de venta pasó de 4 € a ${eur(ult.luz_fijo_mes, 2)} (luz) y de 4 € a ${eur(ult.gas_fijo_mes, 2)} (gas) por mes desde oct. 2025, y el precio neto de la luz subió a ${fmt(ult.luz_precio, 3)} €/kWh. Las condiciones vencen el 31/12/2026: compará en el Portale Offerte de ARERA (ilportaleofferte.it) con tus consumos reales: ${fmt(kwh)} kWh y ${fmt(smc)} Smc al año.`,
+      s: subidaFija, sub: "solo en cuotas fijas, con IVA" },
+    { h: "Bajá el consumo de luz al nivel de 2025",
+      p: `Pasaste de ${fmt(kwhPrev)} a ${fmt(kwh)} kWh al año. Los picos son en invierno (${fmt(F.find(f => f.desde.startsWith("2026-01"))?.kwh || 0)} kWh en enero 2026 contra ${fmt(F.find(f => f.desde.startsWith("2025-01"))?.kwh || 0)} un año antes) y en verano (${fmt(F.find(f => f.desde.startsWith("2026-08"))?.kwh || 0)} kWh en agosto). Eso apunta a una estufa eléctrica y al aire acondicionado. Calefaccioná con el gas, que te sale más barato por unidad de calor, y poné el aire a 26 °C.`,
+      s: exceso * precioLuz, sub: `si volvés a ${fmt(REF.luz_kwh_anio.valor)} kWh` },
+    { h: "Pedí que ajusten el anticipo del agua",
+      p: `Hera te factura 7 m³ por mes estimados, pero el medidor marca unos ${fmt(m3 / dias * 30, 1)} m³ por mes. Por eso cada 6 meses llega un ajuste grande (${eur(F.find(f => f.desde.startsWith("2025-09"))?.agua || 0)} en sep. 2025, ${eur(F.find(f => f.desde.startsWith("2026-03"))?.agua || 0)} en mar. 2026, ${eur(F.find(f => f.desde.startsWith("2026-09"))?.agua || 0)} en sep. 2026). No pagás más, pero con la autolectura en My Hera las facturas quedan parejas.`,
+      s: 0, sub: "evita sorpresas" },
+    { h: "Revisá cuándo termina el kit LED",
+      p: `Pagás ${eur(ult.kit_led, 2)} por mes por el “Hera Led 1 Kit” desde nov. 2024; la factura de ${mes(ult.desde)} es la cuota ${ult.kit_led_cuota}. Confirmá con Hera cuántas cuotas quedan para no seguir pagándolo de más.`,
+      s: ult.kit_led * 12, sub: "por año cuando termine" },
+  ];
+  document.getElementById("tips").innerHTML = tips.map(t => `<article class="tip"><span class="n"></span>
+    <div class="body"><h3>${t.h}</h3><p class="muted">${t.p}</p></div>
+    <div class="save">${t.s > 0 ? `<b>${eur(t.s)}</b><span>${t.sub}</span>` : `<span>${t.sub}</span>`}</div></article>`).join("");
+
+  // ---- tabla
+  const cols = [["Período", f => etiqueta(f)], ["Agua", f => f.agua], ["Gas", f => f.gas], ["Luz", f => f.luz_energia], ["Otros", f => f.extras], ["Total", f => f.total],
+    ["kWh", f => f.kwh, 0], ["Smc", f => f.smc, 1], ["Descuentos", f => f.bono_luz + f.bono_gas + f.bono_extra]];
+  const cell = (v, d = 2) => typeof v === "string" ? `<td>${v}</td>` : `<td class="${v < 0 ? "neg" : ""}">${v === 0 ? "—" : fmt(v, d)}</td>`;
+  document.getElementById("tabla").innerHTML =
+    `<thead><tr>${cols.map(c => `<th scope="col">${c[0]}${["Agua","Gas","Luz","Otros","Total","Descuentos"].includes(c[0]) ? " €" : ""}</th>`).join("")}</tr></thead>
+     <tbody>${[...F].reverse().map(f => `<tr>${cols.map(c => cell(c[1](f), c[2] ?? 2)).join("")}</tr>`).join("")}</tbody>
+     <tfoot><tr><td>Total ${F.length} facturas</td>${cols.slice(1).map(c => cell(F.reduce((s, f) => s + c[1](f), 0), c[2] ?? 2)).join("")}</tr></tfoot>`;
+  document.getElementById("tabla-res").innerHTML =
+    `<thead><tr><th scope="col">Residuos · Alea Ambiente</th><th>Año</th><th>Personas</th><th>Cuota del año €</th><th>Ajuste año anterior €</th><th>Total factura €</th></tr></thead>
+     <tbody>${d.residuos.map(r => `<tr><td>${r.archivo}</td><td>${r.anio}</td><td>${r.componentes}</td><td>${fmt(r.imponible_anio, 2)}</td><td>${r.imponible_ajuste_anterior ? fmt(r.imponible_ajuste_anterior, 2) : "—"}</td><td>${fmt(r.total, 2)}</td></tr>`).join("")}</tbody>`;
+
+  document.getElementById("fuentes").innerHTML = Object.entries(REF).filter(([k, v]) => v && v.texto).map(([k, v]) =>
+    `<li>${v.url ? `<a href="${v.url}" target="_blank" rel="noopener">${v.texto}</a>` : v.texto}: <span class="num">${fmt(v.valor)}</span></li>`).join("");
+
+  dibujar();
+}
+
+function dibujar() {
+  if (!window.Chart || !DATA) return;
+  charts.forEach(c => c.destroy()); charts = [];
+  const F = DATA.facturas_hera;
+  const ink = css("--muted"), line = css("--line");
+  Chart.defaults.font.family = css("--f-body"); Chart.defaults.color = ink; Chart.defaults.borderColor = line;
+  const base = { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+    plugins: { legend: { labels: { boxWidth: 10, boxHeight: 10, useBorderRadius: true, borderRadius: 2 } } },
+    scales: { x: { grid: { display: false } }, y: { grid: { color: line }, border: { display: false } } } };
+
+  charts.push(new Chart(document.getElementById("c-gasto"), {
+    data: { labels: F.map(etiqueta), datasets: [
+      { type: "bar", label: "Luz", data: F.map(f => f.luz_energia), backgroundColor: css("--luz"), stack: "s", borderRadius: 2 },
+      { type: "bar", label: "Gas", data: F.map(f => f.gas), backgroundColor: css("--gas"), stack: "s", borderRadius: 2 },
+      { type: "bar", label: "Agua", data: F.map(f => f.agua), backgroundColor: css("--agua"), stack: "s", borderRadius: 2 },
+      { type: "bar", label: "Otros", data: F.map(f => f.extras), backgroundColor: css("--extra"), stack: "s", borderRadius: 2 },
+      { type: "line", label: "Descuentos", data: F.map(f => -(f.bono_luz + f.bono_gas + f.bono_extra)), borderColor: css("--mejor"), backgroundColor: css("--mejor"), borderDash: [4, 3], pointRadius: 2, tension: 0.25 },
+    ] },
+    options: { ...base, scales: { ...base.scales, x: { ...base.scales.x, stacked: true }, y: { ...base.scales.y, stacked: true, ticks: { callback: v => "€" + v } } },
+      plugins: { ...base.plugins, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${eur(c.parsed.y, 2)}` } } } }
+  }));
+
+  // año contra año
+  const porAnio = (k) => {
+    const m = {}; F.forEach(f => { if (f.desde.slice(0, 7) !== f.hasta.slice(0, 7)) return; const y = f.desde.slice(0, 4); (m[y] ||= Array(12).fill(null))[+f.desde.slice(5, 7) - 1] = f[k]; });
+    return m;
+  };
+  const yoy = (id, k, unit, color) => {
+    const m = porAnio(k), years = Object.keys(m).sort();
+    const shades = years.map((_, i) => i === years.length - 1 ? 1 : 0.35 + 0.25 * i);
+    charts.push(new Chart(document.getElementById(id), { type: "bar",
+      data: { labels: MESES, datasets: years.map((y, i) => ({ label: y, data: m[y], borderRadius: 2,
+        backgroundColor: color + Math.round(shades[i] * 255).toString(16).padStart(2, "0") })) },
+      options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, ticks: { callback: v => v + " " + unit } } } } }));
+  };
+  yoy("c-kwh", "kwh", "kWh", css("--luz"));
+  yoy("c-smc", "smc", "Smc", css("--gas"));
+
+  const L = DATA.agua_lecturas;
+  charts.push(new Chart(document.getElementById("c-agua"), { type: "bar",
+    data: { labels: L.map(l => mes(l.desde) + "–" + mes(l.hasta)), datasets: [
+      { label: "Tu consumo", data: L.map(l => l.m3 / l.dias * 1000 / DATA.personas), backgroundColor: css("--agua"), borderRadius: 2 },
+      { type: "line", label: "Media italiana", data: L.map(() => REF.agua_litros_persona_dia.valor), borderColor: css("--ink"), borderDash: [4, 3], pointRadius: 0 } ] },
+    options: { ...base, scales: { ...base.scales, y: { ...base.scales.y, beginAtZero: true, ticks: { callback: v => v + " L" } } },
+      plugins: { ...base.plugins, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)} L` } } } } }));
+
+  charts.push(new Chart(document.getElementById("c-precio"), { type: "line",
+    data: { labels: F.map(etiqueta), datasets: [
+      { label: "Luz €/kWh", data: F.map(f => f.luz_precio), borderColor: css("--luz"), backgroundColor: css("--luz"), pointRadius: 2, tension: 0.25, yAxisID: "y" },
+      { label: "Gas €/Smc", data: F.map(f => f.gas_precio), borderColor: css("--gas"), backgroundColor: css("--gas"), pointRadius: 2, tension: 0.25, yAxisID: "y1" } ] },
+    options: { ...base, spanGaps: true, scales: { x: base.scales.x,
+      y: { ...base.scales.y, position: "left", ticks: { callback: v => fmt(v, 2) }, title: { display: true, text: "€/kWh" } },
+      y1: { position: "right", grid: { display: false }, border: { display: false }, ticks: { callback: v => fmt(v, 2) }, title: { display: true, text: "€/Smc" } } } } }));
+}
+
+async function cargar(u) {
+  document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.id === u.id));
+  document.getElementById("ubic-detalle").textContent = u.detalle;
+  const d = await (await fetch(u.archivo)).json();
+  render(d);
+}
+
+(async function () {
+  try {
+    const [ubic, ref] = await Promise.all([fetch("data/ubicaciones.json").then(r => r.json()), fetch("data/referencias.json").then(r => r.json())]);
+    REF = ref;
+    const tabs = document.getElementById("tabs");
+    tabs.innerHTML = ubic.map(u => `<button role="tab" data-id="${u.id}">${u.nombre}</button>`).join("");
+    tabs.querySelectorAll("button").forEach((b, i) => b.addEventListener("click", () => cargar(ubic[i])));
+    await cargar(ubic[0]);
+  } catch (e) {
+    document.getElementById("ubic-sub").textContent = "No se pudieron cargar los datos (" + e.message + "). Abrí la página desde GitHub Pages o un servidor local.";
+  }
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", dibujar);
+  new MutationObserver(dibujar).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>
+</body>
+</html>

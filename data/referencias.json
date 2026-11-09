@@ -1,0 +1,9 @@
+{
+ "_nota": "Valores de referencia para un hogar de 2 personas. Editá acá si querés otros umbrales.",
+ "luz_kwh_anio": {"valor": 2200, "texto": "Hogar de 2 personas, estimación ARERA citada por Switcho", "url": "https://www.switcho.it/blog/luce-gas/consumo-medio-energia-elettrica"},
+ "gas_smc_anio": {"valor": 1170, "texto": "Media de Forlì-Cesena (1.400 Smc para 2,4 personas, Facile.it) escalada a 2 personas", "url": "https://www.facile.it/energia-luce-gas/osservatorio/emilia-romagna.html"},
+ "agua_litros_persona_dia": {"valor": 220, "texto": "Media italiana por persona (QuiFinanza, datos ISTAT/ARERA)", "url": "https://quifinanza.it/green/consumo-medio-acqua-quanto-ammonta/508463/"},
+ "tari_anio": {"valor": 340, "texto": "Media nacional 2025, familia de 3 en 100 m² (Cittadinanzattiva vía Teleborsa)", "url": "https://www.teleborsa.it/News/2025/11/26/tari-sempre-piu-cara-in-testa-catania-con-602-euro-la-media-e-di-340-59.html"},
+ "cuota_fija_venta_mes": {"valor": 8, "texto": "Lo que pagabas hasta sep. 2025 (4 € gas + 4 € luz) con la misma oferta Hera"},
+ "banda": 0.15
+}
